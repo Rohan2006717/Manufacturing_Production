@@ -1073,7 +1073,556 @@ def create_excel_report(
         "production_analysis.xlsx"
     )
 
+# ============================================================
+# FORMAT EXCEL DASHBOARD
+# ============================================================
+
+# ============================================================
+# FORMAT EXCEL DASHBOARD
+# ============================================================
+
+def format_excel_dashboard(
+    optimization_summary,
+    bottleneck_name
+):
+    """
+    Format the Excel dashboard using actual calculated
+    production and optimization results.
+
+    The bottleneck and KPI values are passed dynamically
+    from the Python analysis.
+    """
+
+    from openpyxl import load_workbook
+    from openpyxl.styles import (
+        Font,
+        PatternFill,
+        Alignment,
+        Border,
+        Side
+    )
+    from openpyxl.chart import BarChart, Reference
+
+    # --------------------------------------------------------
+    # Load existing workbook
+    # --------------------------------------------------------
+
+    workbook = load_workbook(
+        "production_analysis.xlsx"
+    )
+
+    dashboard = workbook["Dashboard"]
+
+    # --------------------------------------------------------
+    # Get actual scenario results
+    # --------------------------------------------------------
+
+    baseline = optimization_summary[
+        optimization_summary["Scenario"] == "Baseline"
+    ].iloc[0]
+
+    combined = optimization_summary[
+        optimization_summary["Scenario"]
+        == "Combined Improvement"
+    ].iloc[0]
+
+    # --------------------------------------------------------
+    # Calculate actual improvements
+    # --------------------------------------------------------
+
+    baseline_throughput = baseline[
+        "Line Throughput"
+    ]
+
+    optimized_throughput = combined[
+        "Line Throughput"
+    ]
+
+    throughput_improvement = (
+        (
+            optimized_throughput
+            - baseline_throughput
+        )
+        / baseline_throughput
+    )
+
+    baseline_oee = baseline[
+        "Average OEE"
+    ]
+
+    optimized_oee = combined[
+        "Average OEE"
+    ]
+
+    downtime_reduction = (
+        (
+            baseline["Total Downtime"]
+            - combined["Total Downtime"]
+        )
+        / baseline["Total Downtime"]
+    )
+
+    # --------------------------------------------------------
+    # Clear existing dashboard
+    # --------------------------------------------------------
+
+    dashboard.delete_rows(
+        1,
+        dashboard.max_row
+    )
+
+    # --------------------------------------------------------
+    # Colors and styles
+    # --------------------------------------------------------
+
+    dark_fill = PatternFill(
+        fill_type="solid",
+        fgColor="1F4E78"
+    )
+
+    light_fill = PatternFill(
+        fill_type="solid",
+        fgColor="D9EAF7"
+    )
+
+    green_fill = PatternFill(
+        fill_type="solid",
+        fgColor="E2F0D9"
+    )
+
+    orange_fill = PatternFill(
+        fill_type="solid",
+        fgColor="FCE4D6"
+    )
+
+    white_font = Font(
+        color="FFFFFF",
+        bold=True
+    )
+
+    title_font = Font(
+        color="FFFFFF",
+        bold=True,
+        size=20
+    )
+
+    section_font = Font(
+        color="FFFFFF",
+        bold=True,
+        size=14
+    )
+
+    value_font = Font(
+        bold=True,
+        size=16
+    )
+
+    header_font = Font(
+        bold=True
+    )
+
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin")
+    )
+
+    center_alignment = Alignment(
+        horizontal="center",
+        vertical="center"
+    )
+
+    # --------------------------------------------------------
+    # DASHBOARD TITLE
+    # --------------------------------------------------------
+
+    dashboard.merge_cells(
+        "A1:H2"
+    )
+
+    dashboard["A1"] = (
+        "MANUFACTURING PRODUCTION LINE "
+        "OPTIMIZATION DASHBOARD"
+    )
+
+    dashboard["A1"].font = title_font
+    dashboard["A1"].fill = dark_fill
+    dashboard["A1"].alignment = center_alignment
+
+    dashboard.row_dimensions[1].height = 30
+    dashboard.row_dimensions[2].height = 30
+
+    # --------------------------------------------------------
+    # KPI CARD 1 - BOTTLENECK
+    # --------------------------------------------------------
+
+    dashboard["A4"] = "BOTTLENECK"
+
+    dashboard["A5"] = bottleneck_name
+
+    # --------------------------------------------------------
+    # KPI CARD 2 - BASELINE THROUGHPUT
+    # --------------------------------------------------------
+
+    dashboard["D4"] = "BASELINE THROUGHPUT"
+
+    dashboard["D5"] = baseline_throughput
+
+    # --------------------------------------------------------
+    # KPI CARD 3 - OPTIMIZED THROUGHPUT
+    # --------------------------------------------------------
+
+    dashboard["G4"] = "OPTIMIZED THROUGHPUT"
+
+    dashboard["G5"] = optimized_throughput
+
+    # --------------------------------------------------------
+    # KPI CARD 4 - THROUGHPUT IMPROVEMENT
+    # --------------------------------------------------------
+
+    dashboard["A7"] = "THROUGHPUT IMPROVEMENT"
+
+    dashboard["A8"] = throughput_improvement
+
+    # --------------------------------------------------------
+    # KPI CARD 5 - BASELINE OEE
+    # --------------------------------------------------------
+
+    dashboard["D7"] = "BASELINE OEE"
+
+    dashboard["D8"] = baseline_oee
+
+    # --------------------------------------------------------
+    # KPI CARD 6 - OPTIMIZED OEE
+    # --------------------------------------------------------
+
+    dashboard["G7"] = "OPTIMIZED OEE"
+
+    dashboard["G8"] = optimized_oee
+
+    # --------------------------------------------------------
+    # KPI CARD 7 - DOWNTIME REDUCTION
+    # --------------------------------------------------------
+
+    dashboard["A10"] = "DOWNTIME REDUCTION"
+
+    dashboard["A11"] = downtime_reduction
+
+    # --------------------------------------------------------
+    # Style KPI cards
+    # --------------------------------------------------------
+
+    card_pairs = [
+        ("A4", "A5"),
+        ("D4", "D5"),
+        ("G4", "G5"),
+        ("A7", "A8"),
+        ("D7", "D8"),
+        ("G7", "G8"),
+        ("A10", "A11")
+    ]
+
+    for label_cell, value_cell in card_pairs:
+
+        dashboard[label_cell].fill = dark_fill
+        dashboard[label_cell].font = white_font
+        dashboard[label_cell].alignment = center_alignment
+        dashboard[label_cell].border = thin_border
+
+        dashboard[value_cell].fill = light_fill
+        dashboard[value_cell].font = value_font
+        dashboard[value_cell].alignment = center_alignment
+        dashboard[value_cell].border = thin_border
+
+    # --------------------------------------------------------
+    # Number formatting
+    # --------------------------------------------------------
+
+    dashboard["A8"].number_format = "0.00%"
+    dashboard["D8"].number_format = "0.00%"
+    dashboard["G8"].number_format = "0.00%"
+    dashboard["A11"].number_format = "0.00%"
+
+    dashboard["D5"].number_format = "0"
+    dashboard["G5"].number_format = "0"
+
+    # --------------------------------------------------------
+    # OPTIMIZATION COMPARISON SECTION
+    # --------------------------------------------------------
+
+    dashboard.merge_cells(
+        "A14:H14"
+    )
+
+    dashboard["A14"] = (
+        "OPTIMIZATION SCENARIO COMPARISON"
+    )
+
+    dashboard["A14"].font = section_font
+    dashboard["A14"].fill = dark_fill
+    dashboard["A14"].alignment = center_alignment
+
+    # --------------------------------------------------------
+    # Table headers
+    # --------------------------------------------------------
+
+    headers = [
+        "Scenario",
+        "Line Throughput",
+        "Average Daily Throughput",
+        "Total Downtime",
+        "Average OEE",
+        "Bottleneck Good Units",
+        "Bottleneck OEE",
+        "Bottleneck Utilization"
+    ]
+
+    for column_index, header in enumerate(
+        headers,
+        start=1
+    ):
+
+        cell = dashboard.cell(
+            row=15,
+            column=column_index
+        )
+
+        cell.value = header
+        cell.font = header_font
+        cell.fill = light_fill
+        cell.alignment = center_alignment
+        cell.border = thin_border
+
+    # --------------------------------------------------------
+    # Write actual scenario data
+    # --------------------------------------------------------
+
+    scenarios = [
+        "Baseline",
+        "Cycle-Time Improvement",
+        "Downtime Reduction",
+        "Combined Improvement"
+    ]
+
+    for row_index, scenario_name in enumerate(
+        scenarios,
+        start=16
+    ):
+
+        scenario_rows = optimization_summary[
+            optimization_summary["Scenario"]
+            == scenario_name
+        ]
+
+        if scenario_rows.empty:
+            continue
+
+        scenario = scenario_rows.iloc[0]
+
+        values = [
+            scenario["Scenario"],
+            scenario["Line Throughput"],
+            scenario["Average Daily Throughput"],
+            scenario["Total Downtime"],
+            scenario["Average OEE"],
+            scenario["Bottleneck Good Units"],
+            scenario["Bottleneck Average OEE"],
+            scenario["Bottleneck Average Utilization"]
+        ]
+
+        for column_index, value in enumerate(
+            values,
+            start=1
+        ):
+
+            cell = dashboard.cell(
+                row=row_index,
+                column=column_index
+            )
+
+            cell.value = value
+            cell.border = thin_border
+            cell.alignment = center_alignment
+
+    # --------------------------------------------------------
+    # Format percentage columns
+    # --------------------------------------------------------
+
+    for row in range(16, 20):
+
+        dashboard.cell(
+            row=row,
+            column=5
+        ).number_format = "0.00%"
+
+        dashboard.cell(
+            row=row,
+            column=7
+        ).number_format = "0.00%"
+
+        dashboard.cell(
+            row=row,
+            column=8
+        ).number_format = "0.00%"
+
+    # --------------------------------------------------------
+    # Highlight combined improvement row
+    # --------------------------------------------------------
+
+    for column in range(1, 9):
+
+        dashboard.cell(
+            row=19,
+            column=column
+        ).fill = green_fill
+
+        dashboard.cell(
+            row=19,
+            column=column
+        ).font = Font(
+            bold=True
+        )
+
+    # --------------------------------------------------------
+    # THROUGHPUT CHART
+    # --------------------------------------------------------
+
+    throughput_chart = BarChart()
+
+    throughput_chart.type = "col"
+
+    throughput_chart.title = (
+        "Production Throughput by Scenario"
+    )
+
+    throughput_chart.y_axis.title = (
+        "Units"
+    )
+
+    throughput_chart.x_axis.title = (
+        "Optimization Scenario"
+    )
+
+    throughput_data = Reference(
+        dashboard,
+        min_col=2,
+        min_row=15,
+        max_row=19
+    )
+
+    scenario_categories = Reference(
+        dashboard,
+        min_col=1,
+        min_row=16,
+        max_row=19
+    )
+
+    throughput_chart.add_data(
+        throughput_data,
+        titles_from_data=True
+    )
+
+    throughput_chart.set_categories(
+        scenario_categories
+    )
+
+    throughput_chart.height = 7
+    throughput_chart.width = 13
+
+    dashboard.add_chart(
+        throughput_chart,
+        "A22"
+    )
+
+    # --------------------------------------------------------
+    # OEE CHART
+    # --------------------------------------------------------
+
+    oee_chart = BarChart()
+
+    oee_chart.type = "col"
+
+    oee_chart.title = (
+        "OEE by Optimization Scenario"
+    )
+
+    oee_chart.y_axis.title = (
+        "OEE"
+    )
+
+    oee_chart.x_axis.title = (
+        "Optimization Scenario"
+    )
+
+    oee_data = Reference(
+        dashboard,
+        min_col=5,
+        min_row=15,
+        max_row=19
+    )
+
+    oee_chart.add_data(
+        oee_data,
+        titles_from_data=True
+    )
+
+    oee_chart.set_categories(
+        scenario_categories
+    )
+
+    oee_chart.height = 7
+    oee_chart.width = 13
+
+    dashboard.add_chart(
+        oee_chart,
+        "J22"
+    )
+
+    # --------------------------------------------------------
+    # Column widths
+    # --------------------------------------------------------
+
+    column_widths = {
+        "A": 28,
+        "B": 20,
+        "C": 24,
+        "D": 22,
+        "E": 18,
+        "F": 24,
+        "G": 20,
+        "H": 24
+    }
+
+    for column, width in column_widths.items():
+
+        dashboard.column_dimensions[
+            column
+        ].width = width
+
+    # --------------------------------------------------------
+    # Freeze panes
+    # --------------------------------------------------------
+
+    dashboard.freeze_panes = "A15"
+
+    # --------------------------------------------------------
+    # Save workbook
+    # --------------------------------------------------------
+
+    workbook.save(
+        "production_analysis.xlsx"
+    )
+
+    print(
+        "\nExcel dashboard formatted successfully."
+    )
+
+
+# MAIN PROGRAM
+# ============================================================
 # DISPLAY PROJECT CONFIGURATION
+# ============================================================
 
 def display_configuration():
 
@@ -1081,36 +1630,37 @@ def display_configuration():
     print("MANUFACTURING PRODUCTION LINE OPTIMIZATION")
     print("=" * 70)
 
-    print("\nProduction Flow:")
+    print("\nProduction Line:")
     print(
-        "Raw Material -> Cutting -> Machining -> "
-        "Assembly -> Inspection -> Packing"
+        "Raw Material → Cutting → Machining → "
+        "Assembly → Inspection → Packing"
     )
 
-    print("\nProject Configuration:")
-    print(f"Planned production time : {PLANNED_PRODUCTION_TIME} min/day")
-    print(f"Simulation period       : {NUMBER_OF_DAYS} days")
-    print(f"Random seed             : {RANDOM_SEED}")
+    print("\nSimulation Period:")
+    print("30 production days")
 
-    print("\nWorkstation Configuration:")
-    print("-" * 70)
+    print("\nShift Duration:")
+    print("480 minutes (8-hour shift)")
 
-    for workstation, parameters in WORKSTATIONS.items():
+    print("\nKey Manufacturing KPIs:")
+    print(
+        "Availability, Performance, Quality, OEE, "
+        "Throughput, Capacity Utilization"
+    )
 
-        cycle_time = parameters["ideal_cycle_time"]
+    print("\nOptimization Scenarios:")
+    print("1. Baseline")
+    print("2. Bottleneck Cycle-Time Improvement")
+    print("3. Bottleneck Downtime Reduction")
+    print("4. Combined Improvement")
 
-        capacity = calculate_theoretical_capacity(cycle_time)
+    print("\nBottleneck Identification:")
+    print(
+        "Automatically determined from workstation "
+        "effective capacity."
+    )
 
-        print(
-            f"{workstation:<15} | "
-            f"Cycle Time: {cycle_time:.2f} min/unit | "
-            f"Capacity: {capacity:.0f} units/day"
-        )
-
-    print("-" * 70)
-
-
-# MAIN PROGRAM
+    print("=" * 70)
 
 if __name__ == "__main__":
 
@@ -1284,6 +1834,11 @@ if __name__ == "__main__":
         improvement_summary,
         bottleneck["Workstation"]
     )
+
+    format_excel_dashboard(
+    optimization_summary,
+    bottleneck["Workstation"]
+)
     
     print("\n" + "=" * 70)
     print("PROJECT ANALYSIS COMPLETED")
